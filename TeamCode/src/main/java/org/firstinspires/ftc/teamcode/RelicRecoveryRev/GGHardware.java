@@ -21,20 +21,33 @@ public class GGHardware
     /* Local OP Mode Members*/
     HardwareMap hwMap  = null;
     private ElapsedTime period = new ElapsedTime();
+    //Claw Attachment servo positions
 
-    public final double RCLAW_CLOSE = 0.2;
-  public final double RCLAW_OPEN = 0.6;
-    public final double LCLAW_OPEN = 0.15;
+     //RCLAW_OPEN > RCLAW_CLOSE
+     public final double RCLAW_CLOSE = 0.2;
+     public final double RCLAW_OPEN = 0.6;
+    //LCLAW_OPEN < LCLAW_CLOSE
+     public final double LCLAW_OPEN = 0.15;
+     public static double LCLAW_CLOSE = 0.55;
+
+    //Positions for the colorArm
     public final double PIVOT_MIN_RANGE = 0.15;
     public final double PIVOT_MID_RANGE = 0.30;
     public final double PIVOT_MAX_RANGE = 0.90;
-    public static double LCLAW_CLOSE = 0.55;
-    public DcMotor frontleft, frontright, backleft, backright ,lift1, funnel, pump, lift3;
-    public Servo pivot, LClaw, RClaw, suctionArm;
-    public float x, y, z, w, pwr;
-    public static double deadzone = 0.2;
 
-    /* Constructor*/
+    // Instantiating DcMotor objects
+    public DcMotor frontleft, frontright, backleft, backright ,lift1, pump;
+    // Instantiating Servo objects
+    public Servo pivot, LClaw, RClaw, suctionArm;
+    //Floats used in telling the position of the joysticks. x & Y for joystick1. z & w for joystick2.
+    public float x, y, z, w, pwr;
+    //Used to prevent "ghost robot"
+    public static double deadzone = 0.2;
+    //Boolean used in the encoder methods to tell when the robot has reached the correct encoder value
+    boolean reachedPosition = false;
+
+
+    /* Constructor for our robot*/
     public GGHardware()
     {
 
@@ -45,37 +58,37 @@ public class GGHardware
     public void init(HardwareMap ahwMap)
     {
         hwMap = ahwMap;
+        //Four wheels
         frontleft = hwMap.get(DcMotor.class, "fleft");
         frontright = hwMap.get(DcMotor.class, "fright");
         backleft = hwMap.get(DcMotor.class, "bleft");
         backright = hwMap.get(DcMotor.class, "bright");
-        //lift3 = hwMap.get(DcMotor.class, "lift3");
+
+        //Objects common to both attachments
+        pivot = hwMap.get(Servo.class, "pivot");
         lift1 = hwMap.get(DcMotor.class, "lift1");
-        funnel = hwMap.get(DcMotor.class, "funnel");
+
+        //Extra objects for the suction attachment
+        pump = hwMap.get(DcMotor.class, "pump");
+        suctionArm = hwMap.get(Servo.class, "suctionArm");
+
+        //Extra objects for claw attachment
         LClaw = hwMap.get(Servo.class, "lclaw");
         RClaw = hwMap.get(Servo.class, "rclaw");
-        suctionArm = hwMap.get(Servo.class, "suctionArm");
-        pump = hwMap.get(DcMotor.class, "pump");
-        //lift2 = hwMap.get(DcMotor.class, "lift2");
-        pivot = hwMap.get(Servo.class, "pivot");
-       // belt1 = hwMap.get(DcMotor.class, "belt1");bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbnbnbnnnnnnnnnnnnnnnnssnnnnssnhnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnssssssssssssssssssssssssssssnnbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\.
-        //belt2 = hwMap.get(DcMotor.class, "belt2");
 
-        // get a reference to the color sensor.
-        //sensorColor = hwMap.get(ColorSensor.class, "sensor_color_distance");
 
-        // get a reference to the distance sensor that shares the same name.
-        //sensorDistance = hwMap.get(DistanceSensor.class, "sensor_color_distance");
-
-        //frontleft.setDirection(DcMotor.Direction.REVERSE);
-        backleft.setDirection(DcMotor.Direction.REVERSE);
+        // Set directions of the 4 wheels
+        // Uncomment frontleft if it changes direction
+            //frontleft.setDirection(DcMotor.Direction.REVERSE);
+            backleft.setDirection(DcMotor.Direction.REVERSE);
 
     }
 
-    boolean reachedPosition = false;
 
-
-
+/*
+ * Moves the Robot forward of backwards
+ * motorPwr: wanted motor speed for all 4 wheels ( range: -1.0 - 1.0)
+ */
     public void forwBakw(double motorPwr)
     {
         frontright.setPower(motorPwr);
@@ -84,7 +97,10 @@ public class GGHardware
         backleft.setPower(motorPwr);
     }
 
-
+/*
+ * Robot drifts to the right at a speed of 1.0
+ *
+ */
     public void driftRight()
     {
         frontright.setPower(1);
@@ -92,6 +108,10 @@ public class GGHardware
         backright.setPower(-1);
         backleft.setPower(1);
     }
+/*
+ * Robot drifts to the left at a speed of 1.0
+ *
+ */
 
     public void driftLeft()
     {
@@ -100,8 +120,9 @@ public class GGHardware
         backright.setPower(1);
         backleft.setPower(-1);
     }
-
-
+/*
+ * Robot turns to the right at a speed of 1.0
+ */
     public void turnRight()
     {
         frontright.setPower(1);
@@ -109,7 +130,9 @@ public class GGHardware
         backright.setPower(1);
         backleft.setPower(-1);
     }
-
+/*
+ * Robot turns left at a speed of 1.0
+ */
     public void turnLeft()
     {
         frontright.setPower(-1);
@@ -117,7 +140,11 @@ public class GGHardware
         backright.setPower(-1);
         backleft.setPower(1);
     }
-
+/*
+ * Method that changes the value of reachedPosition to false if the robot has reached the specified encoder value
+ * encoderAmount: encoder value the robot should stop at
+ *
+ */
 
     public void runEncodersUntil(int encoderAmount)
     {
@@ -131,16 +158,26 @@ public class GGHardware
             }
             else
             {
-
+                backleft.setPower(0.0);
+                backright.setPower(0.0);
+                frontleft.setPower(0.0);
+                frontright.setPower(0.0);
             }
 
         }
     }
-
+/*
+ * Method that resets the value of the backleft encoder to zero using the STOP_AND_RESET_ENCODER RunMode
+ */
     public void resetEncoders()
     {
+
         backleft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
+/*
+ * Method that changes the RunMode of the motors to RUN_USING_ENCODER
+ *  Must use this in order for the encoder to work
+ */
 
     public void runWithEncoders()
     {

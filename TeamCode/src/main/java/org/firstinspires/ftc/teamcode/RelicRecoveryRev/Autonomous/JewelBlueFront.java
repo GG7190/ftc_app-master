@@ -98,8 +98,11 @@ public class JewelBlueFront extends LinearOpMode {
         // loop and read the RGB and distance data.
         // Note we use opModeIsActive() as our loop condition because it is an interruptible method.
         while (opModeIsActive()) {
+
             robot.pivot.setPosition(robot.PIVOT_MAX_RANGE);
+            //Sleep so robot waits until arm is fully down before it tries reading the color
             sleep(5000);
+
             // convert the RGB values to HSV values.
             // multiply by the SCALE_FACTOR.
             // then cast it back to int (SCALE_FACTOR is a double)
@@ -131,26 +134,33 @@ public class JewelBlueFront extends LinearOpMode {
             //Wait for the sensor to move down into place.
             sleep(5000);
 
-
+            //If the color sensor detects more red, then the robot will move forward towards the red ball and knock in off
             if(sensorColor.red() > sensorColor.blue())
             {
+                //Run forwards into ball
                 runWithEncoders();
                 forwBackw(1);
                 runEncodersUntil(100);
                 resetEncoders();
+                //reset colorArm
                 robot.pivot.setPosition(robot.PIVOT_MAX_RANGE);
+                //Move backwards to park
                 runWithEncoders();
                 forwBackw(-1);
                 runEncodersUntil(2000);
                 resetEncoders();
             }
+            //If the color sensor detects more blue, then the robot will move backwards towards the red ball and knock it off
             else
             {
+                //Run backwards into ball
                 runWithEncoders();
                 forwBackw(-1);
                 runEncodersUntil(100);
                 resetEncoders();
+                //reset colorArm
                 robot.pivot.setPosition(robot.PIVOT_MAX_RANGE);
+                //Move backwards to park
                 runWithEncoders();
                 forwBackw(-1);
                 runEncodersUntil(-2000);
@@ -226,7 +236,10 @@ public class JewelBlueFront extends LinearOpMode {
             }
             else
             {
-
+                robot.backleft.setPower(0.0);
+                robot.backright.setPower(0.0);
+                robot.frontleft.setPower(0.0);
+                robot.frontright.setPower(0.0);
             }
 
         }
